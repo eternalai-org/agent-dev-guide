@@ -7,7 +7,7 @@ dotenv.config();
 
 const app = express();
 
-const PROXY_TARGET = process.env.PROXY_TARGET || 'http://localhost:8000';
+const PROXY_TARGET = process.env.PROXY_TARGET || 'http://localhost:8808';
 const PROXY_HOST = process.env.PROXY_HOST || 'localhost';
 const PROXY_PORT = process.env.PROXY_PORT || 3080;
 
@@ -29,13 +29,19 @@ app.use('/', createProxyMiddleware({
     pathRewrite: { '^/': '/' },
     // Exclude /chat from proxy
     onProxyReq: (proxyReq, req, res) => {
+        //console.log('[DEBUG] Proxying request:', req.method, req.path, 'to', PROXY_TARGET);
         if (req.path === '/chat') {
             res.end();
         }
+    },
+    onError: (err, req, res) => {
+        console.error('[ERROR] Proxy error:', err.message);
+        res.status(500).json({ error: 'Proxy error', details: err.message });
     }
 }));
 
 app.listen(PROXY_PORT, PROXY_HOST, () => {
     console.info(`CORS proxy running on http://${PROXY_HOST}:${PROXY_PORT}`);
     console.info(`[INFO] Chat UI available at http://${PROXY_HOST}:${PROXY_PORT}/chat`);
+    console.info(`[INFO] Proxying to: ${PROXY_TARGET}`);
 });
